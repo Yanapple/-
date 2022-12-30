@@ -4,6 +4,7 @@ from time import sleep
 from telegram.ext import Updater, CommandHandler, MessageHandler, \
     RegexHandler, ConversationHandler, CallbackQueryHandler, Filters
 import config as cf
+import sqlite3
 
 TOKEN = cf.BasicInfo.token
 bot = telegram.Bot(token=TOKEN)
@@ -11,13 +12,29 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 updater = Updater(token=TOKEN)
 dispatcher = updater.dispatcher
 #updates = bot.get_updates()
-updater.start_polling(timeout=123)  # оптимальное время на случай плохого соединения
+updater.start_polling(timeout=123)  # Начать использовать бота
 
 MENU, RESUME_LVL_1, QUESTION_BASE, BASE_LVL_2 = range(4)
 
 resume_exm, test_resume, sql_start, sql_questions, \
 none_code_start, py_start, final_msg, personal_exp_start, \
 operations_start, tech_skills_start, metrics_start, engineering_start = range(12)
+
+
+conn = sqlite3.connect('mybase.db')
+cur = conn.cursor()
+cur.execute("""CREATE TABLE IF NOT EXISTS mybase(telegram_id INT PRIMARY KEY,
+test1_res TEXT, test2_res TEXT, test3_res TEXT, test4_res TEXT, test5_res TEXT,
+ test1_ans TEXT, test2_ans TEXT, test3_ans TEXT, test4_ans TEXT, test5_ans TEXT);""")
+
+
+def add_user_to_base(userid):
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    info = cur.execute('SELECT * FROM mybase WHERE telegram_id=?', (int(userid), )).fetchone()
+    if info is None:
+        cur.execute("""INSERT INTO mybase(telegram_id) VALUES(?);""", (int(userid), ))
+        conn.commit()
 
 
 def wait():
@@ -28,6 +45,8 @@ def start(update, context):
     """
     Стартовое сообщение с соо, что делает бот, и с меню кнопок для перехода к желаемому для изучения материалу.
     """
+    add_user_to_base(update.message.from_user.id)
+
     print(f'start {update.message.from_user}')
     keyboard = cf.Start.keyboard
     reply_markup = telegram.ReplyKeyboardMarkup(keyboard,
@@ -79,8 +98,55 @@ def resume_example(update, context):
                                                                 'new?hhtmFrom=main&hhtmFromLabel=header')]]))
 
 
-test_1_answer_list = []
-flag = 0
+def get_flag(userid):
+    """получение для первого теста номера вопроса, равняющегося кол-ву ответов"""
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    conn.commit()
+    if info[0] == None:
+        return 0
+    else:
+        str_info = ''.join(info)
+        return len(str_info)
+
+
+def put_answer(userid, update):
+    """ запись ответа на одни вопрос теста 1 в базу для пользователя Т """
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    conn.commit()
+    if info[0] == None:
+        answer = str(update)
+    else: answer = ''.join(info) + str(update)
+    cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (str(answer), int(userid), ))
+    conn.commit()
+
+
+def get_answers(userid):
+    """ считывание результатов ответов """
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    conn.commit()
+    return ''.join(info)
+
+
+def clear_answers(userid):
+    """очиска поля с ответами теста 1"""
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (None, int(userid),))
+    conn.commit()
+
+
+def save_result(userid, answers):
+    """сохранение результата из поля ответов в поле результатов"""
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    cur.execute('UPDATE mybase SET test1_res = ? WHERE telegram_id=?', (answers, int(userid),))
+    conn.commit()
 
 
 def test_lvl_1(update, context):
@@ -90,26 +156,28 @@ def test_lvl_1(update, context):
         update.callback_query.answer()
         context.bot.send_message(text='Супер! Тест состоит из 5 вопросов по теоретической части. Желаем удачи!',
                              chat_id= id)
+        clear_answers(id)
+        flag = 0
+    else:
+        flag = get_flag(update.message.from_user.id)
+
+
     wait()
     wait()
 
     keyboard = [['A', 'B'],['C']]
-    options =  telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     question_1 = cf.TestONE.question_1
     question_2 = cf.TestONE.question_2
     question_3 = cf.TestONE.question_3
     question_4 = cf.TestONE.question_4
     question_5 = cf.TestONE.question_5
     question_list = (question_1, question_2, question_3, question_4, question_5)
-    global flag
-    print(flag)
-    while flag<5:
+    while flag < 5:
         context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
                                  parse_mode=cf.BasicInfo.parse_mode)
-        flag = flag + 1
         return RESUME_LVL_1
     if flag == 5:
-        flag = 0
         context.bot.send_message(chat_id=id, text=cf.TestONE.to_know_result,
                                  reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат']],
                                                                            one_time_keyboard=True, resize_keyboard=True))
@@ -119,7 +187,8 @@ def test_lvl_1(update, context):
 def expect_answer_test_1(update, context):
     id = update.effective_chat.id
     user_answer = update.message.text
-    test_1_answer_list.append(user_answer)
+    put_answer(update.message.from_user.id, user_answer)
+    # test_1_answer_list.append(user_answer)
     return test_lvl_1(update, context)
 
 
@@ -128,24 +197,29 @@ def get_result_test_1(update, context):
     keyboard = telegram.ReplyKeyboardMarkup([], one_time_keyboard=True, resize_keyboard=True)
     answer_pattern_list = ['A', 'B', 'A', 'C', 'B']
     wrong_answers = []
+    test_1_answer_list = list(get_answers(update.message.from_user.id))
+
     for i in range (len(answer_pattern_list)):
         if test_1_answer_list[i] == answer_pattern_list[i]:
             continue
         else:
             wrong_answers.append(i+1)
-            print(wrong_answers)
     print(wrong_answers)
+    save_result(id, ''.join(test_1_answer_list))
     if len(wrong_answers)==5:
+        clear_answers(update.message.from_user.id)
         context.bot.send_message(chat_id=id, text=cf.TestONE.failed,
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn],
                                 one_time_keyboard=True, resize_keyboard=True))
         return BASE_LVL_2
     elif 3<=len(wrong_answers)<=4:
+        clear_answers(update.message.from_user.id)
         context.bot.send_message(chat_id=id, text=f'{cf.TestONE.less_than_ok} {", ".join(map(str, wrong_answers))}',
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn],
                                 one_time_keyboard=True, resize_keyboard=True))
         return BASE_LVL_2
     elif 1<=len(wrong_answers)<=2:
+        clear_answers(update.message.from_user.id)
         context.bot.send_message(chat_id=id, text=f'{cf.TestONE.ok_result} {", ".join(map(str, wrong_answers))}',
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn,
                                                                             cf.TestONE.next_lvl_btn],
@@ -153,6 +227,7 @@ def get_result_test_1(update, context):
                                                                            resize_keyboard=True))
         return BASE_LVL_2
     else:
+        clear_answers(update.message.from_user.id)
         context.bot.send_message(chat_id=id, text=cf.TestONE.excellent_result,
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.next_lvl_btn],
                                 one_time_keyboard=True, resize_keyboard=True))
@@ -243,18 +318,10 @@ def py_part(update, context):
     id = update.effective_chat.id
     query = update.callback_query
     if query.data == str(py_start):
-        # inline = [[telegram.InlineKeyboardButton(text="Понятно!", callback_data=str(final_msg))]]
-        # inline_markup = telegram.InlineKeyboardMarkup(inline, one_time_keyboard=True, resize_keyboard=True)
         query.answer()
         context.bot.send_message(chat_id=id, text=cf.Analitics.py_message_1,
                                   parse_mode=cf.BasicInfo.parse_mode)
-        # context.bot.send_message(chat_id=id, text=cf.Analitics.py_message_1, reply_markup=inline_markup,
-        #                          parse_mode=cf.BasicInfo.parse_mode)
         return BASE_LVL_2
-    # if query.data == str(final_msg):
-    #     query.answer()
-    #     context.bot.send_message(chat_id=id, text=cf.Analitics.final_msg)
-    #     return BASE_LVL_2
     return BASE_LVL_2
 
 
@@ -331,7 +398,7 @@ def base_method(update, context, text_msg_msg, text_msg_call, callback, returned
 def test_lvl_2(update, context):
     mark = telegram.ReplyKeyboardMarkup([['Вернуться к меню']], one_time_keyboard=True, resize_keyboard=True)
     context.bot.send_message(chat_id=update.effective_chat.id,
-                             text='В разработке, придите позже! Спасибо за понимание',
+                             text='В разработке аналитиками, придите позже! Спасибо за понимание',
                              reply_markup=mark)
     return BASE_LVL_2
 
@@ -375,7 +442,6 @@ def main():
                 MessageHandler(Filters.regex('Разработка'), engineering),
                 CallbackQueryHandler(engineering, pattern=str(engineering_start)),
                 MessageHandler(Filters.regex('Пройти тест'), test_lvl_2)
-                #CallbackQueryHandler(py_part, pattern=str(final_msg))
             ]
         },
         fallbacks=[CommandHandler("start", start)]
