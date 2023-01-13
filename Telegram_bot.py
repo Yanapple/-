@@ -15,22 +15,81 @@ dispatcher = updater.dispatcher
 updater.start_polling(timeout=123)  # Начать использовать бота
 parse = cf.BasicInfo.parse_mode
 
-MENU, RESUME_LVL_1, BASE_LVL_2, COLLECTIVE_LVL_3, CAREER_LVL_4 = range(5)
+MENU, RESUME_LVL_1, BASE_LVL_2, COLLECTIVE_LVL_3, CAREER_LVL_4, FIRED_LVL_5, EXTRA_FOR_TEST_PART_4 = range(7)
 
 resume_exm, test_resume, sql_start, sql_questions, \
 none_code_start, py_start, final_msg, personal_exp_start, \
 operations_start, tech_skills_start, metrics_start, engineering_start, \
-ncp1, ncp2, ncp3, ncp4, eng1, eng2, eng3, adv1,\
-upg1, upg2, com1, com2, com3, com4, com5,\
-rec1, rec2, rec3, rec4, rec5, rec6, rec7,\
-mot1, mot2, mot3, mot4, mot5,\
-tas1, tas2, tas3, tas4, tas5, = range(44)
+ncp1, ncp2, ncp3, ncp4, eng1, eng2, eng3, adv1, \
+upg1, upg2, com1, com2, com3, com4, com5, \
+rec1, rec2, rec3, rec4, rec5, rec6, rec7, \
+mot1, mot2, mot3, mot4, mot5, \
+tas1, tas2, tas3, tas4, tas5, \
+acc1, acc2, acc3, acc4, acc5, getf1, \
+fsmn1, fsmn2, fsmn3, fsmn4, fsmn5, \
+test2, warn, resum_1 = range(58)
 
 conn = sqlite3.connect('mybase.db')
 cur = conn.cursor()
 cur.execute("""CREATE TABLE IF NOT EXISTS mybase(telegram_id INT PRIMARY KEY,
-test1_res TEXT, test2_res TEXT, test3_res TEXT, test4_res TEXT, test5_res TEXT,
- test1_ans TEXT, test2_ans TEXT, test3_ans TEXT, test4_ans TEXT, test5_ans TEXT);""")
+test1_res TEXT, test2_res TEXT, test3_res TEXT, test4_1_res TEXT, test4_2_res, test5_res TEXT,
+ test_answer_field TEXT);""")
+
+
+def contain_any_answer(userid, column):
+    conn = sqlite3.connect('mybase.db')
+    cur = conn.cursor()
+    info = cur.execute(f'SELECT {column} FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    if info.__contains__(None):
+        return False
+    elif len(info)==0:
+        return False
+    else:
+        return True
+
+
+def main_menu(update, context):
+    id = update.effective_chat.id
+
+    if contain_any_answer(id, 'test1_res TEXT') \
+            and contain_any_answer(id, 'test2_res TEXT') \
+            and contain_any_answer(id, 'test3_res TEXT') \
+            and contain_any_answer(id, 'test4_1_res') \
+            or  contain_any_answer(id, 'test1_res TEXT') \
+            and contain_any_answer(id, 'test2_res TEXT') \
+            and contain_any_answer(id, 'test3_res TEXT') \
+            and contain_any_answer(id, 'test4_2_res'):
+        context.bot.send_message(chat_id=id,
+                                 text="Это основное меню", parse_mode=parse, reply_markup=telegram.ReplyKeyboardMarkup(
+                [['Создать резюме'], ["База вопросов на собеседование"], ["Новый коллектив"],
+                 ["Карьерный рост", "Увольнение"]]))
+        return MENU
+    elif contain_any_answer(id, 'test1_res TEXT') \
+            and contain_any_answer(id, 'test2_res TEXT') \
+            and contain_any_answer(id, 'test3_res TEXT'):
+        context.bot.send_message(chat_id=id,
+                                 text="Это основное меню", parse_mode=parse, reply_markup=telegram.ReplyKeyboardMarkup(
+                [['Создать резюме'], ["База вопросов на собеседование"], ["Новый коллектив"],
+                 ["Карьерный рост"]]))
+        return MENU
+    elif contain_any_answer(id, 'test1_res TEXT') \
+            and contain_any_answer(id, 'test2_res TEXT'):
+        context.bot.send_message(chat_id=id,
+                                 text="Это основное меню", parse_mode=parse, reply_markup=telegram.ReplyKeyboardMarkup(
+                [['Создать резюме'], ["База вопросов на собеседование"], ["Новый коллектив"]]))
+        return MENU
+    elif contain_any_answer(id, 'test1_res TEXT'):
+        context.bot.send_message(chat_id=id,
+                                 text='Это основное меню', parse_mode=parse,
+                                 reply_markup=telegram.ReplyKeyboardMarkup(
+                                     [['Создать резюме'], ["База вопросов на собеседование"]]))
+        return MENU
+    elif not contain_any_answer(id, 'test1_res TEXT'):
+        context.bot.send_message(chat_id=id,
+                                 text='Это основное меню', parse_mode=parse,
+                                 reply_markup=telegram.ReplyKeyboardMarkup(
+                                     [['Создать резюме']]))
+        return MENU
 
 
 def add_user_to_base(userid):
@@ -53,6 +112,7 @@ def start(update, context):
     add_user_to_base(update.message.from_user.id)
 
     print(f'start {update.message.from_user}')
+
     keyboard = cf.Start.keyboard
     reply_markup = telegram.ReplyKeyboardMarkup(keyboard,
                                                 one_time_keyboard=True,
@@ -82,12 +142,14 @@ def resume_info(update, context):
 
     context.bot.send_message(chat_id=id, text=message_1, reply_markup=telegram.ReplyKeyboardRemove())
     wait()
-    context.bot.send_photo(chat_id=id, photo=open('котик.jpg', 'rb'),
+    context.bot.send_photo(chat_id=id, photo=open('photo/resume_1.jpg', 'rb'),
                            caption=message_2, parse_mode=parse)
+
     wait()
     context.bot.send_message(chat_id=id, text=message_3, parse_mode=parse)
     wait()
-    context.bot.send_photo(chat_id=id, caption=message_4, photo=open('пример.jpg', 'rb'), reply_markup=inline_markup)
+    context.bot.send_photo(chat_id=id, caption=message_4, photo=open('photo/resume_2.jpg', 'rb'),
+                           reply_markup=inline_markup)
     return RESUME_LVL_1
 
 
@@ -102,11 +164,12 @@ def resume_example(update, context):
                                                                 'new?hhtmFrom=main&hhtmFromLabel=header')]]))
 
 
-def get_flag(userid):
+def get_flag(userid, column):
     """получение для первого теста номера вопроса, равняющегося кол-ву ответов"""
     conn = sqlite3.connect('mybase.db')
     cur = conn.cursor()
-    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    # info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    info = cur.execute(f'SELECT {column} FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
     conn.commit()
     if info[0] is None:
         return 0
@@ -115,56 +178,66 @@ def get_flag(userid):
         return len(str_info)
 
 
-def put_answer(userid, update):
+def put_answer(userid, update, column):
     """ запись ответа на одни вопрос теста 1 в базу для пользователя Т """
     conn = sqlite3.connect('mybase.db')
     cur = conn.cursor()
-    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    # info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    info = cur.execute(f'SELECT {column} FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
     conn.commit()
     if info[0] is None:
         answer = str(update)
     else:
         answer = ''.join(info) + str(update)
-    cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (str(answer), int(userid),))
+    # cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (str(answer), int(userid),))
+    cur.execute(f'UPDATE mybase SET {column} = ? WHERE telegram_id=?', (str(answer), int(userid),))
+
     conn.commit()
 
 
-def get_answers(userid):
+def get_answers(userid, column):
     """ считывание результатов ответов """
     conn = sqlite3.connect('mybase.db')
     cur = conn.cursor()
-    info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    # info = cur.execute('SELECT test1_ans FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
+    info = cur.execute(f'SELECT {column} FROM mybase WHERE telegram_id=?', (int(userid),)).fetchone()
     conn.commit()
-    return ''.join(info)
+    if info.__contains__(None):
+        return None
+    elif len(info) == 0:
+        return None
+    else:
+        return ''.join(info)
 
 
-def clear_answers(userid):
-    """очиска поля с ответами теста 1"""
+def clear_answers(userid, column):
+    """очиска поля с ответами теста"""
     conn = sqlite3.connect('mybase.db')
     cur = conn.cursor()
-    cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (None, int(userid),))
+    # cur.execute('UPDATE mybase SET test1_ans = ? WHERE telegram_id=?', (None, int(userid),))
+    cur.execute(f'UPDATE mybase SET {column} = ? WHERE telegram_id=?', (None, int(userid),))
     conn.commit()
 
 
-def save_result(userid, answers):
+def save_result(userid, answers, column_res):
     """сохранение результата из поля ответов в поле результатов"""
     conn = sqlite3.connect('mybase.db')
     cur = conn.cursor()
-    cur.execute('UPDATE mybase SET test1_res = ? WHERE telegram_id=?', (answers, int(userid),))
+    # cur.execute('UPDATE mybase SET test1_res = ? WHERE telegram_id=?', (answers, int(userid),))
+    cur.execute(f'UPDATE mybase SET {column_res} = ? WHERE telegram_id=?', (answers, int(userid),))
     conn.commit()
 
 
 def test_lvl_1(update, context):
-    print('Проходят тест')
     id = update.effective_chat.id
     if update.callback_query:
         update.callback_query.answer()
         context.bot.send_message(text='Супер! Тест состоит из 5 вопросов по теоретической части. Желаем удачи!',
                                  chat_id=id)
-        clear_answers(id)
+        clear_answers(id, 'test_answer_field')
         flag = 0
     else:
-        flag = get_flag(update.message.from_user.id)
+        flag = get_flag(update.message.from_user.id, 'test_answer_field')
 
     wait()
 
@@ -191,7 +264,7 @@ def test_lvl_1(update, context):
 def expect_answer_test_1(update, context):
     id = update.effective_chat.id
     user_answer = update.message.text
-    put_answer(id, user_answer)
+    put_answer(id, user_answer, 'test_answer_field')
     return test_lvl_1(update, context)
 
 
@@ -200,44 +273,43 @@ def get_result_test_1(update, context):
     keyboard = telegram.ReplyKeyboardMarkup([], one_time_keyboard=True, resize_keyboard=True)
     answer_pattern_list = ['A', 'B', 'A', 'C', 'B']
     wrong_answers = []
-    test_1_answer_list = list(get_answers(update.message.from_user.id))
+    test_1_answer_list = list(get_answers(update.message.from_user.id, 'test_answer_field'))
 
     for i in range(len(answer_pattern_list)):
         if test_1_answer_list[i] == answer_pattern_list[i]:
             continue
         else:
             wrong_answers.append(i + 1)
-    print(wrong_answers)
-    save_result(id, ''.join(test_1_answer_list))
+
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+    save_result(id, ''.join(test_1_answer_list), 'test1_res')
+
     if len(wrong_answers) == 5:
-        clear_answers(update.message.from_user.id)
+        clear_answers(update.message.from_user.id, 'test_answer_field')
         context.bot.send_message(chat_id=id, text=cf.TestONE.failed,
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn],
                                                                            one_time_keyboard=True,
                                                                            resize_keyboard=True))
-        return BASE_LVL_2
-    elif 3 <= len(wrong_answers) <= 4:
-        clear_answers(update.message.from_user.id)
-        context.bot.send_message(chat_id=id, text=f'{cf.TestONE.less_than_ok} {", ".join(map(str, wrong_answers))}',
+        return RESUME_LVL_1
+    elif 2 <= len(wrong_answers) <= 4:
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id, text=f'{cf.TestONE.res_msg_1} {percentage_res}{cf.TestONE.res_msg_2}\n'
+                                                  f'{cf.TestONE.res_msg_again}\n'
+                                                  f'{cf.TestONE.wrong_answers} - {", ".join(map(str, wrong_answers))}',
                                  reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn],
                                                                            one_time_keyboard=True,
                                                                            resize_keyboard=True))
-        return BASE_LVL_2
-    elif 1 <= len(wrong_answers) <= 2:
-        clear_answers(update.message.from_user.id)
-        context.bot.send_message(chat_id=id, text=f'{cf.TestONE.ok_result} {", ".join(map(str, wrong_answers))}',
-                                 reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.try_again_btn,
-                                                                            cf.TestONE.next_lvl_btn],
-                                                                           one_time_keyboard=True,
-                                                                           resize_keyboard=True))
-        return BASE_LVL_2
+        return RESUME_LVL_1
     else:
-        clear_answers(update.message.from_user.id)
-        context.bot.send_message(chat_id=id, text=cf.TestONE.excellent_result,
-                                 reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.next_lvl_btn],
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id, text=f'{cf.TestONE.res_msg_1} {percentage_res}{cf.TestONE.res_msg_2}\n'
+                                                  f'{cf.TestONE.res_msg_next_lvl}\n'
+                                                  f'{cf.TestONE.wrong_answers} - {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([cf.TestONE.next_lvl_btn,
+                                                                            cf.TestONE.try_again_btn],
                                                                            one_time_keyboard=True,
                                                                            resize_keyboard=True))
-        return BASE_LVL_2
+        return RESUME_LVL_1
 
 
 def inline_former(text, call_data):
@@ -250,7 +322,7 @@ def question_base_menu(update, context):
     print(f'Читают базу вопросов {update.message.from_user}')
     mark = telegram.ReplyKeyboardMarkup(cf.QuestionBase.menu_keyboard, one_time_keyboard=True, resize_keyboard=True)
     context.bot.send_photo(chat_id=update.effective_chat.id, caption=cf.QuestionBase.start_message,
-                           photo=open('кот_вопрос.jpg', 'rb'), reply_markup=mark)
+                           photo=open('photo/2_lvl.jpg', 'rb'), reply_markup=mark)
     return BASE_LVL_2
 
 
@@ -346,7 +418,10 @@ def engineering(update, context):
 
 def get_opinion(update, context):
     id = update.effective_chat.id
-    context.bot.send_message(chat_id=id, text=cf.GetUserOpinion.start_msg)
+    context.bot.send_message(chat_id=id, text=cf.GetUserOpinion.start_msg, reply_markup=telegram.InlineKeyboardMarkup
+    ([[telegram.InlineKeyboardButton(text='Обратная связь',
+                                     url='https://forms.yandex.ru/u/63be8178068ff0426b169bfc/')]]))
+
     return BASE_LVL_2
 
 
@@ -389,19 +464,104 @@ def send_msg_with_query(update, context, msg_type, photo_url, call_data_to_compa
             return returned_command
 
 
+def test_lvl_2_start(update, context):
+    id = update.effective_chat.id
+    mark = telegram.ReplyKeyboardMarkup([['Вернуться к меню'], ['Перейти на следующий уровень - Коллектив']],
+                                        one_time_keyboard=True, resize_keyboard=True)
+    context.bot.send_message(chat_id=id,
+                             text='А вот и тренажер! Вы можете пройти его по желанию - представьте себя на месте'
+                                  ' собеседуемого в кабинете потенциального начальства!\n'
+                                  ' Или проследуйте в другие разделы', reply_markup=mark)
+    context.bot.send_message(chat_id=id,
+                             text='Чтобы начать тренажер, нажмите кнопку ниже.',
+                             reply_markup=inline_former('Начать собеседование', test2))
+
+    return BASE_LVL_2
+
+
 def test_lvl_2(update, context):
-    mark = telegram.ReplyKeyboardMarkup([['Вернуться к меню']], one_time_keyboard=True, resize_keyboard=True)
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text='В разработке аналитиками, придите позже! Спасибо за понимание',
-                             reply_markup=mark)
+    id = update.effective_chat.id
+    if update.callback_query:
+        context.bot.send_message(text='Тренажер состоит из 11 вопросов. Желаем удачи!',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    elif update.message.text == 'Начать тест заново':
+        context.bot.send_message(text='И ещё раз удачи, её много не бывает!',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    else:
+        flag = get_flag(update.message.from_user.id, 'test_answer_field')
+
+    wait()
+
+    keyboard = [['A', 'B'], ['C', 'D']]
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    q_1 = cf.TestTWO.question_1
+    q_2 = cf.TestTWO.question_2
+    q_3 = cf.TestTWO.question_3
+    q_4 = cf.TestTWO.question_4
+    q_5 = cf.TestTWO.question_5
+    q_6 = cf.TestTWO.question_6
+    q_7 = cf.TestTWO.question_7
+    q_8 = cf.TestTWO.question_8
+    q_9 = cf.TestTWO.question_9
+    q_10 = cf.TestTWO.question_10
+    q_11 = cf.TestTWO.question_11
+    question_list = (q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9, q_10, q_11)
+    while flag < 11:
+        context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
+                                 parse_mode=parse)
+        return BASE_LVL_2
+    if flag == 11:
+        context.bot.send_message(chat_id=id, text=cf.TestTWO.end_test,
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат'],
+                                                                            ['Начать тест заново']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return BASE_LVL_2
+
+
+def expect_answer_test_2(update, context):
+    id = update.effective_chat.id
+    user_answer = update.message.text
+    put_answer(id, user_answer, 'test_answer_field')
+    return test_lvl_2(update, context)
+
+
+def get_result_test_2(update, context):
+    id = update.effective_chat.id
+    answer_pattern_list = ['C', 'A', 'A', 'C', 'B', 'B', 'D', 'C', 'B', 'D', 'A']
+    wrong_answers = []
+    test_2_answer_list = list(get_answers(update.message.from_user.id, 'test_answer_field'))
+
+    for i in range(len(answer_pattern_list)):
+        if test_2_answer_list[i] == answer_pattern_list[i]:
+            continue
+        else:
+            wrong_answers.append(i + 1)
+    print(wrong_answers)
+    save_result(id, ''.join(test_2_answer_list), 'test2_res')
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+
+    context.bot.send_message(chat_id=id, text=f'{cf.TestTWO.res_msg} {percentage_res} %!',
+                             reply_markup=telegram.ReplyKeyboardMarkup([['Перейти на следующий уровень - Коллектив'],
+                                                                        ['Начать тест заново'],
+                                                                        ['Вернуться к меню']],
+                                                                       one_time_keyboard=True,
+                                                                       resize_keyboard=True))
     return BASE_LVL_2
 
 
 def new_collective(update, context):
     id = update.effective_chat.id
     if update.message:
-        if update.message.text == 'Новый коллектив':
-            context.bot.send_photo(chat_id=id, caption=cf.NewCollective.start_mes, photo=open('cats-work.jpg', 'rb'),
+        if update.message.text == 'Новый коллектив' \
+                or update.message.text == 'Перейти на следующий уровень - Коллектив' \
+                or update.message.text == 'Вернуться к меню':
+            context.bot.send_photo(chat_id=id, caption=cf.NewCollective.start_mes,
+                                   photo=open('photo/collective_1.jpg', 'rb'),
                                    reply_markup=telegram.ReplyKeyboardMarkup(cf.NewCollective.keyboard_options,
                                                                              one_time_keyboard=True,
                                                                              resize_keyboard=True),
@@ -420,7 +580,8 @@ def new_collective(update, context):
                                      reply_markup=inline_former('Продолжить', adv1), parse_mode=parse)
             return COLLECTIVE_LVL_3
         elif update.message.text == 'Ошибки':
-            context.bot.send_photo(chat_id=id, caption=cf.NewCollective.mistakes, photo=open('cat_nope.jpg', 'rb'),
+            context.bot.send_photo(chat_id=id, caption=cf.NewCollective.mistakes,
+                                   photo=open('photo/collective_2.jpg', 'rb'),
                                    reply_markup=telegram.ReplyKeyboardMarkup(cf.NewCollective.keyboard_options,
                                                                              one_time_keyboard=True,
                                                                              resize_keyboard=True),
@@ -431,22 +592,113 @@ def new_collective(update, context):
                             None, None, COLLECTIVE_LVL_3)
 
 
+def test_lvl_3(update, context):
+    id = update.effective_chat.id
+    if update.message.text == 'Пройти тест':
+        context.bot.send_message(text=cf.TestTHREE.welcome_msg,
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    elif update.message.text == 'Начать тест заново':
+        context.bot.send_message(text='Сейчас точно получится лучше, я это чувствую.',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    else:
+        flag = get_flag(id, 'test_answer_field')
+
+    wait()
+
+    keyboard = [['A', 'B'], ['C']]
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    question_1 = cf.TestTHREE.question_1
+    question_2 = cf.TestTHREE.question_2
+    question_3 = cf.TestTHREE.question_3
+    question_4 = cf.TestTHREE.question_4
+    question_5 = cf.TestTHREE.question_5
+    question_list = (question_1, question_2, question_3, question_4, question_5)
+    while flag < 5:
+        context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
+                                 parse_mode=parse)
+        return COLLECTIVE_LVL_3
+    if flag == 5:
+        context.bot.send_message(chat_id=id, text=cf.TestTHREE.end_test,
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат'],
+                                                                            ['Начать тест заново']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return COLLECTIVE_LVL_3
+
+
+def expect_answer_test_3(update, context):
+    id = update.effective_chat.id
+    user_answer = update.message.text
+    put_answer(id, user_answer, 'test_answer_field')
+    return test_lvl_3(update, context)
+
+
+def get_result_test_3(update, context):
+    id = update.effective_chat.id
+    answer_pattern_list = ['A', 'B', 'B', 'B', 'A']
+    wrong_answers = []
+    test_1_answer_list = list(get_answers(id, 'test_answer_field'))
+
+    for i in range(len(answer_pattern_list)):
+        if test_1_answer_list[i] == answer_pattern_list[i]:
+            continue
+        else:
+            wrong_answers.append(i + 1)
+    print(wrong_answers)
+    save_result(id, ''.join(test_1_answer_list), 'test3_res')
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+    if 0 <= len(wrong_answers) <= 2:
+        clear_answers(id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestTHREE.res_msg_1} {percentage_res} {cf.TestTHREE.res_msg_2}\n'
+                                      f'{cf.TestTHREE.res_msg_next_lvl}\n\n'
+                                      f'{cf.TestTHREE.wrong_answers} - {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Следующий уровень - Карьера'],
+                                                                            ['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return COLLECTIVE_LVL_3
+    else:
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestTHREE.res_msg_1} {percentage_res} {cf.TestTHREE.res_msg_2}\n'
+                                      f'{cf.TestTHREE.res_msg_again}\n\n'
+                                      f'{cf.TestTHREE.wrong_answers} {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return COLLECTIVE_LVL_3
+
+
 def career_menu(update, context):
     id = update.effective_chat.id
-    if update.message.text == 'Карьерный рост' or update.message.text == 'Вернуться к меню':
+    if update.callback_query:
+        context.bot.send_message(chat_id=id, text=cf.Career.position, parse_mode=parse,
+                                 reply_markup=telegram.ReplyKeyboardMarkup(cf.Career.staff_boss_choise_kboard,
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+    elif update.message.text == 'Карьерный рост' \
+            or update.message.text == 'Вернуться к меню' \
+            or update.message.text == 'Следующий уровень - Карьера':
         context.bot.send_message(chat_id=id, text=cf.Career.position, parse_mode=parse,
                                  reply_markup=telegram.ReplyKeyboardMarkup(cf.Career.staff_boss_choise_kboard,
                                                                            one_time_keyboard=True,
                                                                            resize_keyboard=True))
         return CAREER_LVL_4
     elif update.message.text == 'Начальник' or update.message.text == 'Вернуться назад':
-        context.bot.send_photo(chat_id=id, caption=cf.Career.boss, photo=open('cat-boss.jpg', 'rb'),
+        context.bot.send_photo(chat_id=id, caption=cf.Career.boss, photo=open('photo/boss.jpg', 'rb'),
                                reply_markup=telegram.ReplyKeyboardMarkup(cf.Career.boss_kboard,
                                                                          one_time_keyboard=True,
-                                                   resize_keyboard=True), parse_mode=parse)
+                                                                         resize_keyboard=True), parse_mode=parse)
         return CAREER_LVL_4
     elif update.message.text == 'Сотрудник':
-        context.bot.send_photo(chat_id=id, caption=cf.Career.staff, photo=open('cats-work.jpg', 'rb'),
+        context.bot.send_photo(chat_id=id, caption=cf.Career.staff, photo=open('photo/worker.jpg', 'rb'),
                                reply_markup=telegram.ReplyKeyboardMarkup(cf.Career.staff_kboard,
                                                                          one_time_keyboard=True,
                                                                          resize_keyboard=True), parse_mode=parse)
@@ -480,6 +732,7 @@ def boss_line(update, context):
                                                                            one_time_keyboard=True,
                                                                            resize_keyboard=True))
         return CAREER_LVL_4
+
 
 def boss_line_communication(update, context):
     id = update.effective_chat.id
@@ -567,6 +820,374 @@ def boss_line_task_forming(update, context):
                             None, None, CAREER_LVL_4)
 
 
+def test_lvl_4_1(update, context):
+    id = update.effective_chat.id
+    if update.message.text == 'Пройти тест для сотрудника':
+        context.bot.send_message(text=cf.TestFOUR1.welcome_msg,
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    elif update.message.text == 'Начать тест заново':
+        context.bot.send_message(text='Каждая новая попытка - гарантия успеха однажды!',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    else:
+        flag = get_flag(id, 'test_answer_field')
+
+    wait()
+
+    keyboard = [['A', 'B']]
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    question_1 = cf.TestFOUR1.question_1
+    question_2 = cf.TestFOUR1.question_2
+    question_3 = cf.TestFOUR1.question_3
+    question_4 = cf.TestFOUR1.question_4
+    question_5 = cf.TestFOUR1.question_5
+    question_list = (question_1, question_2, question_3, question_4, question_5)
+    while flag < 5:
+        context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
+                                 parse_mode=parse)
+        return CAREER_LVL_4
+    if flag == 5:
+        context.bot.send_message(chat_id=id, text=cf.TestFOUR1.end_test,
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат'],
+                                                                            ['Начать тест заново']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return CAREER_LVL_4
+
+
+def expect_answer_test_4_1(update, context):
+    id = update.effective_chat.id
+    user_answer = update.message.text
+    put_answer(id, user_answer, 'test_answer_field')
+    return test_lvl_4_1(update, context)
+
+
+def get_result_test_4_1(update, context):
+    id = update.effective_chat.id
+    answer_pattern_list = ['B', 'A', 'A', 'A', 'B']
+    wrong_answers = []
+    test_1_answer_list = list(get_answers(id, 'test_answer_field'))
+
+    for i in range(len(answer_pattern_list)):
+        if test_1_answer_list[i] == answer_pattern_list[i]:
+            continue
+        else:
+            wrong_answers.append(i + 1)
+    save_result(id, ''.join(test_1_answer_list), 'test4_1_res')
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+    if 0 <= len(wrong_answers) <= 2:
+        clear_answers(id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestFOUR1.res_msg_1} {percentage_res} {cf.TestFOUR1.res_msg_2}\n'
+                                      f'{cf.TestFOUR1.res_msg_next_lvl}\n\n'
+                                      f'{cf.TestFOUR1.wrong_answers} - {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Следующий уровень - Увольнение'],
+                                                                            ['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return CAREER_LVL_4
+    else:
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestFOUR1.res_msg_1} {percentage_res} {cf.TestFOUR1.res_msg_2}\n'
+                                      f'{cf.TestFOUR1.res_msg_again}\n\n'
+                                      f'{cf.TestFOUR1.wrong_answers} {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return CAREER_LVL_4
+
+
+def test_lvl_4_2(update, context):
+    id = update.effective_chat.id
+    if update.message.text == 'Пройти тест для сотрудника':
+        context.bot.send_message(text=cf.TestFOUR1.welcome_msg,
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    elif update.message.text == 'Начать тест заново':
+        context.bot.send_message(text='Каждая новая попытка - гарантия успеха однажды!',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    else:
+        flag = get_flag(id, 'test_answer_field')
+
+    wait()
+
+    keyboard = [['A', 'B'], ['C']]
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    q_1 = cf.TestFOUR2.question_1
+    q_2 = cf.TestFOUR2.question_2
+    q_3 = cf.TestFOUR2.question_3
+    q_4 = cf.TestFOUR2.question_4
+    q_5 = cf.TestFOUR2.question_5
+    q_6 = cf.TestFOUR2.question_6
+    q_7 = cf.TestFOUR2.question_7
+    q_8 = cf.TestFOUR2.question_8
+    q_9 = cf.TestFOUR2.question_9
+    q_10 = cf.TestFOUR2.question_10
+    q_11 = cf.TestFOUR2.question_11
+    q_12 = cf.TestFOUR2.question_12
+    q_13 = cf.TestFOUR2.question_13
+    question_list = (q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9, q_10, q_11, q_12, q_13)
+    while flag < 13:
+        context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
+                                 parse_mode=parse)
+        return EXTRA_FOR_TEST_PART_4
+    if flag == 13:
+        context.bot.send_message(chat_id=id, text=cf.TestFOUR2.end_test,
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат'],
+                                                                            ['Начать тест заново']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return EXTRA_FOR_TEST_PART_4
+
+
+def expect_answer_test_4_2(update, context):
+    id = update.effective_chat.id
+    user_answer = update.message.text
+    put_answer(id, user_answer, 'test_answer_field')
+    return test_lvl_4_2(update, context)
+
+
+def get_result_test_4_2(update, context):
+    id = update.effective_chat.id
+    answer_pattern_list = ['A', 'A', 'C', 'A', 'C', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'A']
+    wrong_answers = []
+    test_1_answer_list = list(get_answers(id, 'test_answer_field'))
+
+    for i in range(len(answer_pattern_list)):
+        if test_1_answer_list[i] == answer_pattern_list[i]:
+            continue
+        else:
+            wrong_answers.append(i + 1)
+    save_result(id, ''.join(test_1_answer_list), 'test4_2_res')
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+    if 0 <= len(wrong_answers) <= 4:
+        clear_answers(id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestFOUR2.res_msg_1} {percentage_res} {cf.TestFOUR2.res_msg_2}\n'
+                                      f'{cf.TestFOUR2.res_msg_next_lvl}\n\n'
+                                      f'{cf.TestFOUR2.wrong_answers} - {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Следующий уровень - Увольнение'],
+                                                                            ['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return EXTRA_FOR_TEST_PART_4
+    else:
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id,
+                                 text=f'{cf.TestFOUR2.res_msg_1} {percentage_res} {cf.TestFOUR2.res_msg_2}\n'
+                                      f'{cf.TestFOUR2.res_msg_again}\n\n'
+                                      f'{cf.TestFOUR2.wrong_answers} {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return EXTRA_FOR_TEST_PART_4
+
+
+def check_if_can_pass_lvl(column_1, column_2, userid):
+    info_1 = get_answers(userid, column_1)
+    info_2 = get_answers(userid, column_2)
+    if info_1 == 0 or info_1 is None or info_2 == 0 or info_2 is None or len(info_1)==0 or len(info_2)==0:
+        return False
+
+    first_info = list(get_answers(userid, column_1))
+    second_info = list(get_answers(userid, column_2))
+
+    pattern_1 = ['B', 'A', 'A', 'A', 'B']
+    pattern_2 = ['A', 'A', 'C', 'A', 'C', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'A']
+    wrong_answers_1 = []
+    wrong_answers_2 = []
+
+    for i in range(len(pattern_1)):
+        if first_info[i] != pattern_1[i]:
+            wrong_answers_1.append(i + 1)
+
+    for x in range(len(pattern_2)):
+        if second_info[x] != pattern_2[x]:
+            wrong_answers_2.append(x + 1)
+
+    if len(wrong_answers_1) <= 2 and len(wrong_answers_2) <= 4:
+        return True
+    else:
+        return False
+
+
+def firing_menu(update, context):
+    id = update.effective_chat.id
+    context.bot.send_photo(chat_id=id, caption=cf.Firing.start_msg, parse_mode=parse,
+                           photo=open('photo/firing.jpg', 'rb'),
+                           reply_markup=telegram.ReplyKeyboardMarkup(cf.Firing.menu_kboard,
+                                                                     one_time_keyboard=True,
+                                                                     resize_keyboard=True))
+    return FIRED_LVL_5
+    # if check_if_can_pass_lvl('test4_1_res', 'test4_2_res', id):
+    #     context.bot.send_photo(chat_id=id, caption=cf.Firing.start_msg, parse_mode=parse,
+    #                            photo=open('photo/firing.jpg', 'rb'),
+    #                            reply_markup=telegram.ReplyKeyboardMarkup(cf.Firing.menu_kboard,
+    #                                                                      one_time_keyboard=True,
+    #                                                                      resize_keyboard=True))
+    #     return FIRED_LVL_5
+    # else:
+    #     context.bot.send_message(chat_id=id, text=cf.Warn.warning_no_accepte, parse_mode=parse,
+    #                              reply_markup=(inline_former('Вернуться на предыдущий уровень', warn)))
+    #     return CAREER_LVL_4
+
+
+def accept_firing(update, context):
+    id = update.effective_chat.id
+    if update.message:
+        context.bot.send_message(chat_id=id, text=cf.Firing.acceptance, parse_mode=parse)
+        wait()
+        context.bot.send_message(chat_id=id, text=cf.Firing.acceptance_1, parse_mode=parse,
+                                 reply_markup=inline_former('Следующий пункт', acc1))
+        return FIRED_LVL_5
+    if update.callback_query:
+        send_msg_with_query(update, context, 'text', None, acc1, cf.Firing.acceptance_2,
+                            'Следующий пункт', acc2, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, acc2, cf.Firing.acceptance_3,
+                            'Следующий пункт', acc3, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, acc3, cf.Firing.acceptance_4,
+                            'Следующий пункт', acc4, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, acc4, cf.Firing.acceptance_5,
+                            'Последний пункт', acc5, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, acc5, cf.Firing.acceptance_final,
+                            None, None, FIRED_LVL_5)
+
+
+def how_to_get_fired(update, context):
+    id = update.effective_chat.id
+    if update.message:
+        context.bot.send_message(chat_id=id, text=cf.Firing.firing_myself, parse_mode=parse)
+        wait()
+        context.bot.send_message(chat_id=id, text=cf.Firing.firing_myself_1, parse_mode=parse,
+                                 reply_markup=inline_former('Что писать в заявлении?', getf1))
+        return FIRED_LVL_5
+    if update.callback_query:
+        send_msg_with_query(update, context, 'text', None, getf1, cf.Firing.firing_myself_req,
+                            None, None, FIRED_LVL_5)
+
+
+def how_to_fire(update, context):
+    id = update.effective_chat.id
+    if update.message:
+        context.bot.send_message(chat_id=id, text=cf.Firing.firing_smn_1, parse_mode=parse,
+                                 reply_markup=inline_former('Следующий шаг', fsmn1))
+        return FIRED_LVL_5
+    if update.callback_query:
+        send_msg_with_query(update, context, 'text', None, fsmn1, cf.Firing.firing_smn_2,
+                            'Следующий шаг', fsmn2, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, fsmn2, cf.Firing.firing_smn_3,
+                            'Следующий шаг', fsmn3, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, fsmn3, cf.Firing.firing_smn_4,
+                            'Следующий шаг', fsmn4, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, fsmn4, cf.Firing.firing_smn_5,
+                            'Последний шаг', fsmn5, FIRED_LVL_5)
+        send_msg_with_query(update, context, 'text', None, fsmn5, cf.Firing.firing_smn_6,
+                            None, None, FIRED_LVL_5)
+
+
+def test_lvl_5(update, context):
+    id = update.effective_chat.id
+    if update.message.text == 'Пройти тест':
+        context.bot.send_message(text=cf.TestFIVE.welcome_msg,
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    elif update.message.text == 'Начать тест заново':
+        context.bot.send_message(text='Давайте, осталось совсем немного, ну же!',
+                                 chat_id=id)
+        clear_answers(id, 'test_answer_field')
+        flag = 0
+    else:
+        flag = get_flag(id, 'test_answer_field')
+
+    wait()
+
+    keyboard = [['A', 'B'], ['C']]
+    options = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
+    q_1 = cf.TestFIVE.question_1
+    q_2 = cf.TestFIVE.question_2
+    q_3 = cf.TestFIVE.question_3
+    q_4 = cf.TestFIVE.question_4
+    q_5 = cf.TestFIVE.question_5
+    q_6 = cf.TestFIVE.question_6
+    q_7 = cf.TestFIVE.question_7
+    q_8 = cf.TestFIVE.question_8
+    q_9 = cf.TestFIVE.question_9
+    q_10 = cf.TestFIVE.question_10
+    q_11 = cf.TestFIVE.question_11
+    question_list = (q_1, q_2, q_3, q_4, q_5, q_6, q_7, q_8, q_9, q_10, q_11)
+    while flag < 11:
+        context.bot.send_message(chat_id=id, text=question_list[flag], reply_markup=options,
+                                 parse_mode=parse)
+        return FIRED_LVL_5
+    if flag == 11:
+        context.bot.send_message(chat_id=id, text=cf.TestFIVE.end_test, parse_mode=parse,
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Узнать результат'],
+                                                                            ['Начать тест заново']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return FIRED_LVL_5
+
+
+def expect_answer_test_5(update, context):
+    id = update.effective_chat.id
+    user_answer = update.message.text
+    put_answer(id, user_answer, 'test_answer_field')
+    return test_lvl_5(update, context)
+
+
+def get_result_test_5(update, context):
+    id = update.effective_chat.id
+    answer_pattern_list = ['A', 'A', 'C', 'B', 'A', 'C', 'A', 'B', 'B', 'A', 'C']
+    wrong_answers = []
+    test_1_answer_list = list(get_answers(id, 'test_answer_field'))
+
+    for i in range(len(answer_pattern_list)):
+        if test_1_answer_list[i] == answer_pattern_list[i]:
+            continue
+        else:
+            wrong_answers.append(i + 1)
+    save_result(id, ''.join(test_1_answer_list), 'test5_res')
+    percentage_res = int(((len(answer_pattern_list) - len(wrong_answers)) / len(answer_pattern_list)) * 100)
+    if 0 <= len(wrong_answers) <= 3:
+        clear_answers(id, 'test_answer_field')
+        context.bot.send_message(chat_id=id, parse_mode=parse,
+                                 text=f'{cf.TestFIVE.res_msg_1} {percentage_res} {cf.TestFIVE.res_msg_2}\n'
+                                      f'{cf.TestFIVE.res_msg_next_lvl}\n\n'
+                                      f'{cf.TestFIVE.wrong_answers} - {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        context.bot.send_message(chat_id=id, text=f'{cf.TestFIVE.opinion}',
+                                 parse_mode=parse, reply_markup=telegram.InlineKeyboardMarkup
+            ([[telegram.InlineKeyboardButton(text='Обратная связь',
+                                             url='https://forms.yandex.ru/u/63be6ecf5d2a063af7c46234/')]]))
+        return FIRED_LVL_5
+    else:
+        clear_answers(update.message.from_user.id, 'test_answer_field')
+        context.bot.send_message(chat_id=id, parse_mode=parse,
+                                 text=f'{cf.TestFIVE.res_msg_1} {percentage_res} {cf.TestFIVE.res_msg_2}\n'
+                                      f'{cf.TestFIVE.res_msg_again}\n\n'
+                                      f'{cf.TestFIVE.wrong_answers} {", ".join(map(str, wrong_answers))}',
+                                 reply_markup=telegram.ReplyKeyboardMarkup([['Начать тест заново'],
+                                                                            ['Вернуться к меню']],
+                                                                           one_time_keyboard=True,
+                                                                           resize_keyboard=True))
+        return FIRED_LVL_5
+
+
 def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -575,18 +1196,24 @@ def main():
                 MessageHandler(Filters.regex('Создать резюме'), resume_info),
                 MessageHandler(Filters.regex('База вопросов на собеседование'), question_base_menu),
                 MessageHandler(Filters.regex('Новый коллектив'), new_collective),
-                MessageHandler(Filters.regex('Карьерный рост'), career_menu)
+                MessageHandler(Filters.regex('Карьерный рост'), career_menu),
+                MessageHandler(Filters.regex('Увольнение'), firing_menu),
+
+                CommandHandler("menu", main_menu)
             ],
             RESUME_LVL_1: [
                 MessageHandler(Filters.regex('B') | Filters.regex('C') | Filters.regex('A'), expect_answer_test_1),
                 CallbackQueryHandler(test_lvl_1, pattern=str(test_resume)),
                 MessageHandler(Filters.regex('Узнать результат'), get_result_test_1),
-                CallbackQueryHandler(resume_example, pattern=str(resume_exm))
+                CallbackQueryHandler(resume_example, pattern=str(resume_exm)),
+                MessageHandler(Filters.regex('Перейти на следующий уровень - Собеседование'), question_base_menu),
+                MessageHandler(Filters.regex('Попробовать снова'), test_lvl_1),
+
+                CommandHandler("menu", main_menu)
             ],
             BASE_LVL_2: [
-                MessageHandler(Filters.regex('Попробовать снова'), test_lvl_1),
-                MessageHandler(Filters.regex('Перейти на следующий уровень'), question_base_menu),
                 MessageHandler(Filters.regex('Вернуться к меню'), question_base_menu),
+                CommandHandler("menu", main_menu),
 
                 MessageHandler(Filters.regex('Аналитика'), analitics),
                 MessageHandler(Filters.regex('SQL'), sql_part_start),
@@ -617,13 +1244,34 @@ def main():
 
                 MessageHandler(Filters.regex('Рассказать о своем опыте'), get_opinion),
 
-                MessageHandler(Filters.regex('Пройти тест'), test_lvl_2)
+                MessageHandler(Filters.regex('Пройти тест'), test_lvl_2_start),
+                CallbackQueryHandler(test_lvl_2, pattern=str(test2)),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_2),
+                MessageHandler(Filters.regex('B')
+                               | Filters.regex('C')
+                               | Filters.regex('A')
+                               | Filters.regex('D'), expect_answer_test_2),
+                MessageHandler(Filters.regex('Начать тест заново'), test_lvl_2),
+                MessageHandler(Filters.regex('Перейти на следующий уровень - Коллектив'), new_collective)
             ],
             COLLECTIVE_LVL_3: [
                 MessageHandler(Filters.regex('Первый день')
                                | Filters.regex('Советы психологов')
-                               | Filters.regex('Ошибки'), new_collective),
+                               | Filters.regex('Ошибки')
+                               | Filters.regex('Перейти на следующий уровень - Коллектив'), new_collective),
                 CallbackQueryHandler(new_collective, pattern=str(adv1)),
+
+                MessageHandler(Filters.regex('Вернуться к меню'), new_collective),
+                MessageHandler(Filters.regex('Пройти тест'), test_lvl_3),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_3),
+                MessageHandler(Filters.regex('B')
+                               | Filters.regex('C')
+                               | Filters.regex('A'), expect_answer_test_3),
+                MessageHandler(Filters.regex('Начать тест заново'), test_lvl_3),
+                MessageHandler(Filters.regex('Следующий уровень - Карьера'), career_menu),
+
+                CommandHandler("menu", main_menu)
+
             ],
             CAREER_LVL_4: [
                 MessageHandler(Filters.regex('Вернуться к меню')
@@ -660,7 +1308,60 @@ def main():
                 CallbackQueryHandler(boss_line_task_forming, pattern=str(tas2)),
                 CallbackQueryHandler(boss_line_task_forming, pattern=str(tas3)),
                 CallbackQueryHandler(boss_line_task_forming, pattern=str(tas4)),
-                CallbackQueryHandler(boss_line_task_forming, pattern=str(tas5))
+                CallbackQueryHandler(boss_line_task_forming, pattern=str(tas5)),
+
+                MessageHandler(Filters.regex('Пройти тест для сотрудника'), test_lvl_4_1),
+                MessageHandler(Filters.regex('Пройти тест для начальства'), test_lvl_4_2),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_4_1),
+                MessageHandler(Filters.regex('B')
+                               | Filters.regex('A'), expect_answer_test_4_1),
+                MessageHandler(Filters.regex('Начать тест заново'), test_lvl_4_1),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_4_1),
+                MessageHandler(Filters.regex('Следующий уровень - Увольнение'), firing_menu),
+
+                CallbackQueryHandler(career_menu, pattern=str(warn)),
+
+                CommandHandler("menu", main_menu)
+
+            ],
+            EXTRA_FOR_TEST_PART_4: [
+                MessageHandler(Filters.regex('Вернуться к меню'), new_collective),
+                MessageHandler(Filters.regex('B')
+                               | Filters.regex('C')
+                               | Filters.regex('A'), expect_answer_test_4_2),
+                MessageHandler(Filters.regex('Начать тест заново'), test_lvl_4_2),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_4_2),
+                MessageHandler(Filters.regex('Следующий уровень - Увольнение'), firing_menu),
+
+                CommandHandler("menu", main_menu)
+            ],
+            FIRED_LVL_5: [
+                MessageHandler(Filters.regex('Увольнение')
+                               | Filters.regex('Следующий уровень - Увольнение')
+                               | Filters.regex('Вернуться к меню'), firing_menu),
+                MessageHandler(Filters.regex('Как принять свое увольнение?'), accept_firing),
+                CallbackQueryHandler(accept_firing, pattern=str(acc1)),
+                CallbackQueryHandler(accept_firing, pattern=str(acc2)),
+                CallbackQueryHandler(accept_firing, pattern=str(acc3)),
+                CallbackQueryHandler(accept_firing, pattern=str(acc4)),
+                CallbackQueryHandler(accept_firing, pattern=str(acc5)),
+                MessageHandler(Filters.regex('Как уволиться?'), how_to_get_fired),
+                CallbackQueryHandler(how_to_get_fired, pattern=str(getf1)),
+                MessageHandler(Filters.regex('Как уволить?'), how_to_fire),
+                CallbackQueryHandler(how_to_fire, pattern=str(fsmn1)),
+                CallbackQueryHandler(how_to_fire, pattern=str(fsmn2)),
+                CallbackQueryHandler(how_to_fire, pattern=str(fsmn3)),
+                CallbackQueryHandler(how_to_fire, pattern=str(fsmn4)),
+                CallbackQueryHandler(how_to_fire, pattern=str(fsmn5)),
+
+                MessageHandler(Filters.regex('Пройти тест'), test_lvl_5),
+                MessageHandler(Filters.regex('Узнать результат'), get_result_test_5),
+                MessageHandler(Filters.regex('B')
+                               | Filters.regex('C')
+                               | Filters.regex('A'), expect_answer_test_5),
+                MessageHandler(Filters.regex('Начать тест заново'), test_lvl_5),
+
+                CommandHandler("menu", main_menu)
             ]
         },
         fallbacks=[CommandHandler("start", start)]
